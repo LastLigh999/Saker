@@ -1,0 +1,135 @@
+@import url("https://fonts.googleapis.com/css2?family=Macondo&display=swap");
+
+body,
+html {
+	padding: 0px;
+	margin: 0px;
+	background-color: purple;
+	font-size: 25px;
+	font-family: "Macondo", cursive;
+	font-weight: 400;
+	font-style: normal;
+}
+@media (max-width: 767px) {
+	body,
+	html {
+		font-size: 20px;
+	}
+}
+
+#Game {
+	display: flex;
+	justify-content: center;
+	align-items: start;
+	gap: 10px;
+}
+
+/* displayBoardStyles */
+.playerColumn {
+	border: 5px purple solid;
+	background-color: white;
+	width: 20vw;
+	max-width: 200px;
+	display: flex;
+	justify-content: start;
+	align-items: center;
+	flex-direction: column;
+}
+.playerColumn > div {
+	display: flex;
+	justify-content: start;
+	width: 100%;
+}
+
+.bid {
+	border-right: 2px purple solid;
+	height: calc(100vh - 100px);
+	text-align: center;
+}
+.bid > div {
+	width: 1.5rem;
+	height: 1.5rem;
+	background-color: rgba(0, 0, 0, 0.1);
+	border-bottom: 1px purple solid;
+}
+.scoreBoard {
+	width: 100%;
+}
+.scoreBoard > div {
+	height: 1.5rem;
+	width: 100%;
+	background-color: rgba(0, 0, 0, 0.1);
+	border-bottom: 1px purple solid;
+}
+
+/* Modal style */
+#userInput[open],
+#userTakes[open] {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+}
+
+.selectorDisplay {
+	display: grid;
+	grid-template-columns: 1fr 1fr 1fr;
+	gap: 5px;
+}
+h2,
+h3 {
+	margin: 0px;
+}
+.selector {
+	background-color: gray;
+	width: 50px;
+	height: 50px;
+	text-align: center;
+	font-size: 30px;
+}
+
+/* Controls overlay */
+#controls {
+	width: calc(100vw - 30%);
+	position: fixed;
+	display: flex;
+	gap: 20px;
+
+	justify-content: space-between;
+	height: fit-content;
+	left: 15%;
+	top: calc(100% - 55px);
+}
+#controls > div > img {
+	width: 50px;
+	background-color: red;
+	border: 2px black solid;
+
+	border-radius: 8px;
+}
+#controls > div.unavailable {
+	pointer-events: none;
+}
+
+#controls > div > img.active {
+	transition: background-color 0.2s;
+	background-color: #709255;
+}
+#controls > div.unavailable > img {
+	background-color: grey;
+}
+
+#runResults {
+	visibility: hidden;
+	background-color: #709255;
+	flex: 1;
+	border-radius: 20px;
+	pointer-events: none;
+	transform: scale(0, 1);
+	transition: transform 0.2s, visibility 0.2s;
+}
+#runResults.active {
+	pointer-events: all;
+	transition: visibility 0s, transform 0.5s;
+	visibility: visible;
+	transform: scale(1, 1);
+}
