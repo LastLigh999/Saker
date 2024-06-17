@@ -39,11 +39,15 @@ html {
 	display: flex;
 	justify-content: start;
 	width: 100%;
+
+	height: calc(100vh - 100px);
+	overflow-y: scroll;
 }
 
 .bid {
 	border-right: 2px purple solid;
-	height: calc(100vh - 100px);
+	height: fit-content;
+	min-height: 100vh;
 	text-align: center;
 }
 .bid > div {

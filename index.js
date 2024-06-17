@@ -5,18 +5,25 @@ let resultModal = document.querySelector("#userTakes");
 let lockinButton = document.querySelector("#lockin");
 let resultButton = document.querySelector("#runResults");
 let noneAudio = new Audio("./public/audio/none.m4a");
+let wantAllAudio = new Audio("./public/audio/Yvela_minda.m4a");
+let takeAllAudio = new Audio("./public/audio/Yvelas_wageba.m4a");
+let takeNoneAudio = new Audio("./public/audio/Xishti_2.m4a");
 let bidingStage = true;
 let elapsedRound = 0;
 
 let lockedin = false;
 
 class Player {
-	constructor(name, htmlElement, id, redoTheBidfunc) {
+	constructor(name, htmlElement, id, redoTheBidfunc, redoTheResultFunc) {
 		this.name = name;
 		this.score = 0;
 		this.id = id;
-		this.redoTheResultFunc = redoTheResult;
+		this.currentTakes = 0;
+		this.lastScore = 0;
+		this.currentTakeshtml;
+		this.redoTheResultFunc = redoTheResultFunc;
 		this.redoTheBidfunc = redoTheBidfunc;
+
 		this.currentBid;
 		this.currentBidHtml;
 		this.hasPlacedBid = false;
@@ -25,6 +32,7 @@ class Player {
 		this.pastResults = [];
 		this.column = htmlElement;
 		this.reSelectBidBound = this.reSelectBid.bind(this);
+		this.reSelectTakesBound = this.reSelectTakes.bind(this);
 		this.initiateColumn();
 	}
 
@@ -75,57 +83,89 @@ class Player {
 	addScoreUi(number) {
 		let tempele = document.createElement("div");
 		tempele.textContent = number;
+		this.currentTakeshtml = tempele;
 		this.scoreboard.appendChild(tempele);
+		tempele.addEventListener("click", () => this.reSelectTakes(tempele));
 	}
 	incrementSocre(number, takes, round = elapsedRound) {
 		this.pastResults.push(number);
+		this.lastScore = number;
 		this.pastRounds[round][1] = takes;
 		this.addScoreUi(number);
 		this.score += number;
 	}
+	reSelectTakes(tempele) {
+		if (lockedin == true || bidingStage == true) {
+			return;
+		}
+		this.score -= this.lastScore;
+		this.scoreboard.removeChild(tempele);
+		this.redoTheResultFunc(this.id);
+	}
 
 	//handlePlayerInput
-	placeBid(number, round = elapsedRound) {
+	placeBid(number, currentRound, round = elapsedRound) {
 		this.pastBids.push(number);
 		this.addBidUi(number);
-		this.pastRounds[round][0] = number;
+
+		this.pastRounds[round] = [number, 0];
+
 		this.currentBid = number;
 		this.hasPlacedBid = true;
 		if (number == 0) {
 			noneAudio.play();
+		} else if (number == currentRound) {
+			wantAllAudio.play();
 		}
+
 		return number;
 	}
 	handResult(takes, round) {
+		this.currentTakes = takes;
+		this.calculateScore(takes, round);
+		this.hasPlacedBid = false;
+	}
+	calculateScore(takes, round) {
+		if (takes == 0 && this.currentBid != 0) {
+			takeNoneAudio.play();
+		} else if (takes == round && this.currentBid == round) {
+			takeAllAudio.play();
+		}
 		if (takes == this.currentBid) {
 			if (takes == round) {
 				this.incrementSocre(100 * takes, takes);
 			} else {
-				let incrementammount = 50;
+				let incrementamount = 50;
 				for (let i = 0; i < takes; i++) {
-					incrementammount += 50;
+					incrementamount += 50;
 				}
-				this.incrementSocre(incrementammoun, takes);
+				this.incrementSocre(incrementamount, takes);
 			}
 		} else {
 			if (takes == 0) {
 				this.incrementSocre(-200, takes);
 			} else {
-				let incrementammount = 0;
+				let incrementamount = 0;
 				for (let i = 0; i < takes; i++) {
-					incrementammount += 10;
+					incrementamount += 10;
 				}
-				this.incrementSocre(incrementammount, takes);
+				this.incrementSocre(incrementamount, takes);
 			}
 		}
-		this.hasPlacedBid = false;
-		console.log(this.pastRounds);
+	}
+
+	endRound() {
+		this.currentBidHtml.style["pointerEvents"] = "none";
+		this.currentTakeshtml.style["pointerEvents"] = "none";
 	}
 
 	//SetResults
 	setResult() {
 		let tempele = document.createElement("h2");
 		tempele.textContent = (this.score / 100).toFixed(1);
+		let tempele2 = document.createElement("h2");
+		tempele2.textContent = "*";
+		this.bids.appendChild(tempele2);
 		this.scoreboard.appendChild(tempele);
 	}
 }
@@ -158,30 +198,45 @@ class JockerGame {
 			let playerColumn = document.createElement("div");
 			playerColumn.classList.add("playerColumn");
 			gameElement.appendChild(playerColumn);
-			this.players.push(new Player(names[i], playerColumn, i, this.redoTheBid));
+			this.players.push(
+				new Player(
+					names[i],
+					playerColumn,
+					i,
+					this.redoTheBid,
+					this.redoTheResult
+				)
+			);
 		}
 		if (this.gameIsOngoing) {
-			if (this.totalRounds <= 8) {
-				this.sets(1);
-				this.resumeGame();
-			} else if (this.totalRounds < 13) {
-				this.nines();
-				this.resumeGame();
-			} else if (this.totalRounds < 21) {
-				this.sets(-1);
-				this.resumeGame();
-			} else if (this.totalRounds < 25) {
-				this.nines();
-				this.resumeGame();
-			} else {
-				alert("something went wrong");
-			}
+			this.nextSet();
 		} else {
 			this.gameIsOngoing = true;
 			this.sets(1);
 			this.currentRound++;
 			this.totalRounds++;
+			console.log(this);
 		}
+	}
+	nextSet() {
+		console.log(this);
+		elapsedRound = 0;
+		if (this.totalRounds <= 8) {
+			this.sets(1);
+			this.resumeGame();
+		} else if (this.totalRounds < 13) {
+			this.nines();
+			this.resumeGame();
+		} else if (this.totalRounds < 21) {
+			this.sets(-1);
+			this.resumeGame();
+		} else if (this.totalRounds < 25) {
+			this.nines();
+			this.resumeGame();
+		} else {
+			alert("something went wrong");
+		}
+		bidingStage = true;
 	}
 	startRound() {
 		this.currentRound++;
@@ -191,11 +246,18 @@ class JockerGame {
 		this.totalTakes = 0;
 		this.currentBidPool = 0;
 		this.canBePlayed = false;
+		elapsedRound++;
 		if (this.queuedrounds.length == 0) {
 			for (let i = 0; i < this.players.length; i++) {
 				this.players[i].setResult();
 			}
+			this.nextSet();
+			lockinButtonFunc();
+			this.getBids();
 			return;
+		}
+		for (let i = 0; i < this.players.length; i++) {
+			this.players[i].endRound();
 		}
 		bidingStage = true;
 		lockinButtonFunc();
@@ -204,6 +266,7 @@ class JockerGame {
 
 	//Queue results
 	sets(order) {
+		this.currentRound = 0;
 		if (order == 1) {
 			for (let i = 0; i < 8; i++) {
 				this.queuedrounds.push(i + 1);
@@ -216,6 +279,7 @@ class JockerGame {
 		this.playerQueue = [3, 0, 1, 2, 3, 0, 1, 2];
 	}
 	nines() {
+		this.currentRound = 0;
 		this.queuedrounds = [9, 9, 9, 9];
 		this.playerQueue = [3, 0, 1, 2];
 	}
@@ -240,15 +304,15 @@ class JockerGame {
 	async redoTheBid(id) {
 		this.currentBidPool -= this.players[id].currentBid;
 		let bid = await this.generateModal(this.players[id].name, true);
-		this.currentBidPool += this.players[id].placeBid(bid);
+		this.currentBidPool += this.players[id].placeBid(bid, this.queuedrounds[0]);
 		this.checkIfReady();
 	}
 	async redoTheResult(id) {
-		let takes = await this.generateModalResults(
-			this.players[this.currentQueue[i]].name
-		);
+		this.totalTakes -= this.players[id].currentTakes;
+		let takes = await this.generateModalResults(this.players[id].name);
+
 		this.totalTakes += takes;
-		this.players[this.currentQueue[i]].handResult(takes, this.queuedrounds[0]);
+		this.players[id].handResult(takes, this.queuedrounds[0]);
 		this.checkIfReady();
 	}
 
@@ -267,7 +331,10 @@ class JockerGame {
 				bid = await this.generateModal(this.players[this.currentQueue[i]].name);
 			}
 
-			this.currentBidPool += this.players[this.currentQueue[i]].placeBid(bid);
+			this.currentBidPool += this.players[this.currentQueue[i]].placeBid(
+				bid,
+				this.queuedrounds[0]
+			);
 		}
 		this.checkIfReady();
 	}
@@ -303,8 +370,11 @@ class JockerGame {
 			modal.showModal();
 			for (let i = 0; i <= 9; i++) {
 				let selector = document.createElement("div");
-				if (i <= this.currentRound) {
-					if (lastone == true && this.currentBidPool + i != this.currentRound) {
+				if (i <= this.queuedrounds[0]) {
+					if (
+						lastone == true &&
+						this.currentBidPool + i != this.queuedrounds[0]
+					) {
 						selector.textContent = i;
 
 						selector.dataset.number = i;
@@ -355,8 +425,11 @@ class JockerGame {
 			resultModal.showModal();
 			for (let i = 0; i <= 9; i++) {
 				let selector = document.createElement("div");
-				if (i <= this.currentRound - this.totalTakes) {
-					if (lastone == true && this.currentBidPool + i != this.currentRound) {
+				if (i <= this.queuedrounds[0] - this.totalTakes) {
+					if (
+						lastone == true &&
+						this.currentBidPool + i != this.queuedrounds[0]
+					) {
 						selector.textContent = i;
 
 						selector.dataset.number = i;
