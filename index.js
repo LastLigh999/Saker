@@ -8,28 +8,40 @@ let noneAudio = new Audio("./public/audio/none.m4a");
 let wantAllAudio = new Audio("./public/audio/Yvela_minda.m4a");
 let takeAllAudio = new Audio("./public/audio/Yvelas_wageba.m4a");
 let takeNoneAudio = new Audio("./public/audio/Xishti_2.m4a");
-let bidingStage = true;
+let globalbidingStage = true;
 let elapsedRound = 0;
 
 let lockedin = false;
 
 class Player {
-	constructor(name, htmlElement, id, redoTheBidfunc, redoTheResultFunc) {
+	constructor(
+		name,
+		htmlElement,
+		id,
+		redoTheBidfunc,
+		redoTheResultFunc,
+		resumeGame = false,
+		score = 0,
+		pastRounds = []
+	) {
 		this.name = name;
-		this.score = 0;
+		this.score = score;
+		this.setScore = 0;
 		this.id = id;
 		this.currentTakes = 0;
 		this.lastScore = 0;
 		this.currentTakeshtml;
 		this.redoTheResultFunc = redoTheResultFunc;
 		this.redoTheBidfunc = redoTheBidfunc;
+		this.resumeGame = resumeGame;
 
 		this.currentBid;
 		this.currentBidHtml;
 		this.hasPlacedBid = false;
-		this.pastRounds = [];
+		this.pastRounds = pastRounds;
 		this.pastBids = [];
 		this.pastResults = [];
+		this.tempround = [];
 		this.column = htmlElement;
 		this.reSelectBidBound = this.reSelectBid.bind(this);
 		this.reSelectTakesBound = this.reSelectTakes.bind(this);
@@ -52,13 +64,23 @@ class Player {
 		body.appendChild(score);
 		this.scoreboard = score;
 		this.bids = bids;
+		if (this.resumeGame == true) {
+			this.generateBody();
+		}
 	}
 	generateBody() {
-		for (let i = 0; i < this.pastBids.length; i++) {
-			this.addBidUi(this.pastBids[i]);
-		}
-		for (let i = 0; i < this.pastResults.length; i++) {
-			this.addScoreUi(this.pastResults[i]);
+		let scoreUpToNow = 0;
+		for (let i = 0; i < this.pastRounds.length; i++) {
+			if (this.pastRounds[i] == true) {
+				this.getSetResults(scoreUpToNow);
+				continue;
+			}
+			this.resumeBidUi(this.pastRounds[i][0]);
+			scoreUpToNow += this.resumeScoreUi(
+				this.pastRounds[i][1],
+				this.pastRounds[i][2],
+				this.pastRounds[i][0]
+			);
 		}
 	}
 
@@ -71,12 +93,30 @@ class Player {
 		tempele.addEventListener("click", () => this.reSelectBidBound(tempele));
 	}
 	reSelectBid(tempele) {
-		if (lockedin == true || bidingStage == false) {
+		if (lockedin == true || globalbidingStage == false) {
 			return;
 		}
 		this.bids.removeChild(tempele);
 		this.redoTheBidfunc(this.id);
+
 		this.hasPlacedBid = false;
+	}
+
+	//Resume game UI
+	resumeScoreUi(takes, round, bid) {
+		let number = this.calculateScore(takes, round, bid); /* 
+		console.log(`testing ${number}, ${round}, ${takes}`); */
+		let tempele = document.createElement("div");
+		tempele.textContent = number;
+		this.scoreboard.appendChild(tempele);
+		this.currentTakeshtml = tempele;
+		return number;
+	}
+	resumeBidUi(number) {
+		let tempele = document.createElement("div");
+		tempele.textContent = number;
+		this.currentBidHtml = tempele;
+		this.bids.appendChild(tempele);
 	}
 
 	//Update Scores
@@ -90,12 +130,13 @@ class Player {
 	incrementSocre(number, takes, round = elapsedRound) {
 		this.pastResults.push(number);
 		this.lastScore = number;
-		this.pastRounds[round][1] = takes;
+		this.tempround[1] = takes; /* 
+		this.pastRounds[round][1] = takes; */
 		this.addScoreUi(number);
 		this.score += number;
 	}
 	reSelectTakes(tempele) {
-		if (lockedin == true || bidingStage == true) {
+		if (lockedin == true || globalbidingStage == true) {
 			return;
 		}
 		this.score -= this.lastScore;
@@ -107,8 +148,9 @@ class Player {
 	placeBid(number, currentRound, round = elapsedRound) {
 		this.pastBids.push(number);
 		this.addBidUi(number);
-
-		this.pastRounds[round] = [number, 0];
+		/* 
+		this.pastRounds[round] = [number, 0]; */
+		this.tempround[0] = number;
 
 		this.currentBid = number;
 		this.hasPlacedBid = true;
@@ -122,47 +164,67 @@ class Player {
 	}
 	handResult(takes, round) {
 		this.currentTakes = takes;
-		this.calculateScore(takes, round);
-		this.hasPlacedBid = false;
-	}
-	calculateScore(takes, round) {
+		this.incrementSocre(this.calculateScore(takes, round), takes);
 		if (takes == 0 && this.currentBid != 0) {
 			takeNoneAudio.play();
 		} else if (takes == round && this.currentBid == round) {
 			takeAllAudio.play();
 		}
-		if (takes == this.currentBid) {
+		this.hasPlacedBid = false;
+	}
+	calculateScore(takes, round, bid = this.currentBid) {
+		if (takes == bid) {
 			if (takes == round) {
-				this.incrementSocre(100 * takes, takes);
+				return 100 * takes;
 			} else {
 				let incrementamount = 50;
 				for (let i = 0; i < takes; i++) {
 					incrementamount += 50;
 				}
-				this.incrementSocre(incrementamount, takes);
+				return incrementamount;
 			}
 		} else {
 			if (takes == 0) {
-				this.incrementSocre(-200, takes);
+				return -200;
 			} else {
 				let incrementamount = 0;
 				for (let i = 0; i < takes; i++) {
 					incrementamount += 10;
 				}
-				this.incrementSocre(incrementamount, takes);
+				return incrementamount;
 			}
 		}
 	}
 
-	endRound() {
+	endRound(round) {
 		this.currentBidHtml.style["pointerEvents"] = "none";
 		this.currentTakeshtml.style["pointerEvents"] = "none";
+		this.tempround[2] = round;
+		let temparr = [...this.tempround];
+		this.pastRounds.push(temparr);
+		let saveData = {
+			name: this.name,
+			score: this.score,
+			pastRounds: this.pastRounds,
+		};
+		localStorage.setItem(`player ${this.id + 1}`, JSON.stringify(saveData));
 	}
 
 	//SetResults
 	setResult() {
+		this.pastRounds.push(true);
+		let saveData = {
+			name: this.name,
+			score: this.score,
+			pastRounds: this.pastRounds,
+		};
+		localStorage.setItem(`player ${this.id + 1}`, JSON.stringify(saveData));
+		this.getSetResults();
+	}
+
+	getSetResults(score = this.score) {
 		let tempele = document.createElement("h2");
-		tempele.textContent = (this.score / 100).toFixed(1);
+		tempele.textContent = (score / 100).toFixed(1);
 		let tempele2 = document.createElement("h2");
 		tempele2.textContent = "*";
 		this.bids.appendChild(tempele2);
@@ -172,24 +234,38 @@ class Player {
 
 class JockerGame {
 	constructor(
-		gameRunning = false,
+		gameIsOngoing = false,
 		players = [],
 		currentRound = 0,
-		totalRounds = 0
+		totalRounds = 0,
+		queuedrounds = [],
+		playerQueue = []
 	) {
 		this.players = players;
+		this.gameIsOngoing = gameIsOngoing;
+
+		this.bidingStage = true;
 		this.canBePlayed = false;
-		this.gameIsOngoing = gameRunning;
+		this.countSetScores = false;
+		this.gameisResuming = false;
+
 		this.currentBidPool = 0;
+		this.totalTakes = 0;
+
 		this.currentRound = currentRound;
 		this.totalRounds = totalRounds;
-		this.queuedrounds = [];
-		this.playerQueue = [];
+
+		this.queuedrounds = queuedrounds;
+		this.playerQueue = playerQueue;
+
 		this.currentQueue = [];
+
+		//Binds
 		this.redoTheBid = this.redoTheBid.bind(this);
 		this.redoTheResult = this.redoTheResult.bind(this);
-		this.totalTakes = 0;
-		this.startTheGame();
+		this.resultButtonFunc = this.resultButtonFunc.bind(this);
+
+		gameIsOngoing ? this.resumeGame() : this.startTheGame();
 	}
 
 	//playGame
@@ -197,15 +273,10 @@ class JockerGame {
 		for (let i = 0; i < 4; i++) {
 			let playerColumn = document.createElement("div");
 			playerColumn.classList.add("playerColumn");
+			let name = prompt("PlayerName: ");
 			gameElement.appendChild(playerColumn);
 			this.players.push(
-				new Player(
-					names[i],
-					playerColumn,
-					i,
-					this.redoTheBid,
-					this.redoTheResult
-				)
+				new Player(name, playerColumn, i, this.redoTheBid, this.redoTheResult)
 			);
 		}
 		if (this.gameIsOngoing) {
@@ -215,53 +286,111 @@ class JockerGame {
 			this.sets(1);
 			this.currentRound++;
 			this.totalRounds++;
+			this.getBids();
 			console.log(this);
 		}
 	}
+	resumeGame() {
+		let players = [];
+		for (let i = 0; i < 4; i++) {
+			let playerColumn = document.createElement("div");
+			playerColumn.classList.add("playerColumn");
+			gameElement.appendChild(playerColumn);
+			console.log(this.players[i]);
+			players.push(
+				new Player(
+					this.players[i].name,
+					playerColumn,
+					i,
+					this.redoTheBid,
+					this.redoTheResult,
+					true,
+					this.players[i].score,
+					this.players[i].pastRounds
+				)
+			);
+		}
+		console.log("resume Game");
+		this.players = players;
+		this.resumeSubFunction();
+	}
+
 	nextSet() {
 		console.log(this);
 		elapsedRound = 0;
 		if (this.totalRounds <= 8) {
 			this.sets(1);
-			this.resumeGame();
 		} else if (this.totalRounds < 13) {
 			this.nines();
-			this.resumeGame();
 		} else if (this.totalRounds < 21) {
 			this.sets(-1);
-			this.resumeGame();
 		} else if (this.totalRounds < 25) {
 			this.nines();
-			this.resumeGame();
 		} else {
 			alert("something went wrong");
 		}
-		bidingStage = true;
+		this.bidingStage = true;
+		globalbidingStage = this.bidingStage;
 	}
 	startRound() {
-		this.currentRound++;
-		this.totalRounds++;
+		console.log(this.queuedrounds[0]);
+		for (let i = 0; i < this.players.length; i++) {
+			this.players[i].endRound(this.queuedrounds[0]);
+		}
 		this.queuedrounds.shift();
 		this.playerQueue.shift();
+		this.currentRound++;
+		this.totalRounds++;
+		let saveData = {
+			gameIsOngoing: this.gameIsOngoing,
+			players: this.players.map((e) => {
+				return { name: e.name, pastRounds: e.pastRounds, score: e.score };
+			}),
+			currentRound: this.currentRound,
+			totalRounds: this.totalRounds,
+			queuedrounds: this.queuedrounds,
+			playerQueue: this.playerQueue,
+		};
+
 		this.totalTakes = 0;
 		this.currentBidPool = 0;
 		this.canBePlayed = false;
 		elapsedRound++;
+
+		localStorage.setItem("JockerData-saker", JSON.stringify(saveData));
 		if (this.queuedrounds.length == 0) {
 			for (let i = 0; i < this.players.length; i++) {
 				this.players[i].setResult();
 			}
-			this.nextSet();
+			this.countSetScores = true;
 			lockinButtonFunc();
-			this.getBids();
 			return;
 		}
-		for (let i = 0; i < this.players.length; i++) {
-			this.players[i].endRound();
-		}
-		bidingStage = true;
+
+		this.bidingStage = true;
+		globalbidingStage = this.bidingStage;
+
 		lockinButtonFunc();
 		this.getBids();
+	}
+	resumeSubFunction() {
+		this.totalTakes = 0;
+		this.currentBidPool = 0;
+		this.canBePlayed = false;
+
+		if (this.queuedrounds.length == 0) {
+			for (let i = 0; i < this.players.length; i++) {
+				this.players[i].setResult();
+			}
+			this.countSetScores = true; /* 
+			lockinButtonFunc(); */
+			lockinButton.classList.toggle("unavailable", false);
+			return;
+		}
+		lockinButton.classList.toggle("unavailable", false);
+		/* 
+		lockinButtonFunc(); */
+		this.gameisResuming = true;
 	}
 
 	//Queue results
@@ -318,6 +447,7 @@ class JockerGame {
 
 	//Get Values from players
 	async getBids() {
+		this.gameisResuming = false;
 		this.generateQueue();
 		for (let i = 0; i < 4; i++) {
 			let bid;
@@ -341,11 +471,14 @@ class JockerGame {
 	async getResults() {
 		this.generateQueue();
 		lockinButtonFunc();
-		bidingStage = false;
+		this.bidingStage = false;
+
+		globalbidingStage = this.bidingStage;
 		this.checkIfReady();
 		for (let i = 0; i < 4; i++) {
 			let takes = await this.generateModalResults(
-				this.players[this.currentQueue[i]].name
+				this.players[this.currentQueue[i]].name,
+				this.players[this.currentQueue[i]].currentBid
 			);
 			this.totalTakes += takes;
 			this.players[this.currentQueue[i]].handResult(
@@ -413,13 +546,14 @@ class JockerGame {
 			button.addEventListener("click", () => handleClick());
 		});
 	}
-	generateModalResults(name, lastone = false) {
+	generateModalResults(name, playerBid, lastone = false) {
 		return new Promise((resolve) => {
 			let selectedNumber;
 			let numberhasbeenselected = false;
 			let selectedNumberDisplay = resultModal.querySelector("h2");
 			let selectorDisplay = resultModal.querySelector(".selectorDisplay");
 			resultModal.querySelector(".PlayerName").textContent = name;
+			resultModal.querySelector(".PlayerBid").textContent = playerBid;
 			selectedNumberDisplay.innerHTML = "&nbsp;";
 			selectorDisplay.innerHTML = "";
 			resultModal.showModal();
@@ -471,7 +605,7 @@ class JockerGame {
 
 	//Check if game can be played
 	checkIfReady() {
-		if (bidingStage == true) {
+		if (this.bidingStage == true) {
 			let bids = true;
 			for (let i = 0; i < 4; i++) {
 				if (this.players[i].hasPlacedBid == false) {
@@ -494,28 +628,48 @@ class JockerGame {
 		}
 	}
 
-	resumeGame() {
-		for (let i = 0; i < this.currentRound - 1; i++) {
-			this.queuedrounds.shift();
-			this.playerQueue.shift();
+	//handle buttons
+	resultButtonFunc() {
+		if (this.bidingStage == true && this.gameisResuming == true) {
+			lockinButtonFunc();
+			lockinButton.classList.toggle("unavailable", true);
+			this.getBids();
+
+			return;
+		} else if (this.countSetScores == true) {
+			this.countSetScores = false;
+			this.nextSet();
+			lockinButtonFunc();
+			this.getBids();
+			console.log(this.countSetScores);
+			return;
+		} else if (this.bidingStage == true) {
+			this.getResults();
+			return;
 		}
+		this.startRound();
 	}
 }
-let jocker = new JockerGame();
-jocker.getBids();
+let jocker;
 
+if (localStorage.getItem("JockerData-saker") != null) {
+	let pastGame = JSON.parse(localStorage.getItem("JockerData-saker"));
+	jocker = new JockerGame(
+		pastGame.gameIsOngoing,
+		pastGame.players,
+		pastGame.currentRound,
+		pastGame.totalRounds,
+		pastGame.queuedrounds,
+		pastGame.playerQueue
+	);
+} else {
+	jocker = new JockerGame();
+}
 function lockinButtonFunc() {
 	lockedin == true ? (lockedin = false) : (lockedin = true);
 	lockinButton.querySelector("img").classList.toggle("active", lockedin);
-	resultButton.classList.toggle("active");
-}
-function resultButtonFunc() {
-	if (bidingStage == true) {
-		jocker.getResults();
-		return;
-	}
-	jocker.startRound();
+	resultButton.classList.toggle("active", lockedin);
 }
 
 lockinButton.addEventListener("click", lockinButtonFunc);
-resultButton.addEventListener("click", resultButtonFunc);
+resultButton.addEventListener("click", jocker.resultButtonFunc);

@@ -90,6 +90,10 @@ h3 {
 	text-align: center;
 	font-size: 30px;
 }
+.headerDisplayModal {
+	display: flex;
+	justify-content: space-between;
+}
 
 /* Controls overlay */
 #controls {
