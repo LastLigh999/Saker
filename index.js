@@ -4,6 +4,7 @@ let modal = document.querySelector("#userInput");
 let resultModal = document.querySelector("#userTakes");
 let lockinButton = document.querySelector("#lockin");
 let resultButton = document.querySelector("#runResults");
+let resetGame = document.querySelector("#Reset");
 let noneAudio = new Audio("./public/audio/none.m4a");
 let wantAllAudio = new Audio("./public/audio/Yvela_minda.m4a");
 let takeAllAudio = new Audio("./public/audio/Yvelas_wageba.m4a");
@@ -673,3 +674,19 @@ function lockinButtonFunc() {
 
 lockinButton.addEventListener("click", lockinButtonFunc);
 resultButton.addEventListener("click", jocker.resultButtonFunc);
+resetGame.addEventListener("click", () => {
+	let test = confirm("გინდა რომ წაშალო შენი საკერის თამაში?");
+	if (test == true) {
+		test = confirm("100%?");
+		if (test == true) {
+			test = confirm("არ ინანებ? მერე არ მითხრა რომ არ გაგაფრთხილე");
+			if (test == true) {
+				test = confirm("თუ რამე შეგეშალა აგინე შენთავს");
+				if (test == true) {
+					localStorage.removeItem("JockerData-saker");
+					alert("გვერდი გადატვირთე და ახალი თამაში დაიწყება");
+				}
+			}
+		}
+	}
+});
