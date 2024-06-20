@@ -93,8 +93,10 @@ class Player {
 					scoreUpToNow -= this.currentHighScore;
 				}
 				this.currentHighScore = 0;
+				this.highScoreHtml = undefined;
 				this.getSetResults(scoreUpToNow);
 				this.premiumAvailable = true;
+				currentScore = 0;
 				continue;
 			}
 			if (currentScore > this.currentHighScore) {
@@ -113,6 +115,7 @@ class Player {
 
 			if (this.lostPremium == true) this.premiumAvailable = false;
 		}
+		console.log(this);
 	}
 
 	//Update bits
@@ -292,6 +295,7 @@ class Player {
 		this.premiumAvailable = true;
 		this.lostPremium = false;
 		this.currentHighScore = 0;
+		this.highScoreHtml = undefined;
 		this.currentScore = 0;
 		let tempele = document.createElement("h2");
 		tempele.textContent = (score / 100).toFixed(1);
@@ -469,9 +473,9 @@ class JockerGame {
 		this.canBePlayed = false;
 
 		if (this.queuedrounds.length == 0) {
-			for (let i = 0; i < this.players.length; i++) {
+			/* 			for (let i = 0; i < this.players.length; i++) {
 				this.players[i].setResult();
-			}
+			} */
 			this.countSetScores = true; /* 
 			lockinButtonFunc(); */
 			lockinButton.classList.toggle("unavailable", false);
