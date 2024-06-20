@@ -31,7 +31,13 @@ class Player {
 		this.id = id;
 		this.currentTakes = 0;
 		this.lastScore = 0;
+		this.currentHighScore = 0;
+		this.currentScore = 0;
+		this.premiumAvailable = true;
+		this.lostPremium = false;
+
 		this.currentTakeshtml;
+		this.highScoreHtml;
 		this.redoTheResultFunc = redoTheResultFunc;
 		this.redoTheBidfunc = redoTheBidfunc;
 		this.resumeGame = resumeGame;
@@ -43,6 +49,7 @@ class Player {
 		this.pastBids = [];
 		this.pastResults = [];
 		this.tempround = [];
+
 		this.column = htmlElement;
 		this.reSelectBidBound = this.reSelectBid.bind(this);
 		this.reSelectTakesBound = this.reSelectTakes.bind(this);
@@ -71,17 +78,40 @@ class Player {
 	}
 	generateBody() {
 		let scoreUpToNow = 0;
+		let currentScore = 0;
 		for (let i = 0; i < this.pastRounds.length; i++) {
-			if (this.pastRounds[i] == true) {
+			if (this.pastRounds[i][0] === true) {
+				if (this.pastRounds[i][1] == 1) {
+					this.currentTakeshtml.textContent =
+						parseInt(this.currentTakeshtml.textContent) + this.currentHighScore;
+
+					this.highScoreHtml.style.backgroundColor = "#709255";
+					scoreUpToNow += this.currentHighScore;
+				} else if (this.pastRounds[i][1] == 2) {
+					this.highScoreHtml.textContent = "(o_o)";
+					this.highScoreHtml.style.backgroundColor = "red";
+					scoreUpToNow -= this.currentHighScore;
+				}
+				this.currentHighScore = 0;
 				this.getSetResults(scoreUpToNow);
+				this.premiumAvailable = true;
 				continue;
 			}
+			if (currentScore > this.currentHighScore) {
+				this.currentHighScore = currentScore;
+				this.highScoreHtml = this.currentTakeshtml;
+			}
+
 			this.resumeBidUi(this.pastRounds[i][0]);
-			scoreUpToNow += this.resumeScoreUi(
+
+			currentScore = this.resumeScoreUi(
 				this.pastRounds[i][1],
 				this.pastRounds[i][2],
 				this.pastRounds[i][0]
 			);
+			scoreUpToNow += currentScore;
+
+			if (this.lostPremium == true) this.premiumAvailable = false;
 		}
 	}
 
@@ -122,6 +152,7 @@ class Player {
 
 	//Update Scores
 	addScoreUi(number) {
+		this.currentScore = number;
 		let tempele = document.createElement("div");
 		tempele.textContent = number;
 		this.currentTakeshtml = tempele;
@@ -175,6 +206,7 @@ class Player {
 	}
 	calculateScore(takes, round, bid = this.currentBid) {
 		if (takes == bid) {
+			this.lostPremium = false;
 			if (takes == round) {
 				return 100 * takes;
 			} else {
@@ -185,6 +217,7 @@ class Player {
 				return incrementamount;
 			}
 		} else {
+			this.lostPremium = true;
 			if (takes == 0) {
 				return -200;
 			} else {
@@ -197,9 +230,17 @@ class Player {
 		}
 	}
 
-	endRound(round) {
+	endRound(round, roundsLeft) {
 		this.currentBidHtml.style["pointerEvents"] = "none";
 		this.currentTakeshtml.style["pointerEvents"] = "none";
+
+		if (roundsLeft != 1) {
+			if (this.currentScore > this.currentHighScore) {
+				this.currentHighScore = this.currentScore;
+				this.highScoreHtml = this.currentTakeshtml;
+			}
+		}
+
 		this.tempround[2] = round;
 		let temparr = [...this.tempround];
 		this.pastRounds.push(temparr);
@@ -209,11 +250,35 @@ class Player {
 			pastRounds: this.pastRounds,
 		};
 		localStorage.setItem(`player ${this.id + 1}`, JSON.stringify(saveData));
+		if (this.lostPremium == true) {
+			this.premiumAvailable = false;
+		}
 	}
 
 	//SetResults
-	setResult() {
-		this.pastRounds.push(true);
+	setResult(premiumHappened, amount = 0) {
+		let lastScore =
+			parseInt(this.currentTakeshtml.textContent) + this.currentHighScore;
+		if (premiumHappened == true) {
+			if (this.premiumAvailable == true) {
+				this.score += this.currentHighScore;
+				this.currentTakeshtml.textContent = lastScore;
+
+				this.highScoreHtml.style.backgroundColor = "#709255";
+				this.pastRounds.push([true, 1]);
+			} else if (amount == 1 && this.currentHighScore >= 100) {
+				this.highScoreHtml.textContent = "(o_o)";
+				this.highScoreHtml.style.backgroundColor = "red";
+				this.score -= this.currentHighScore;
+
+				this.pastRounds.push([true, 2]);
+			} else {
+				this.pastRounds.push([true, 0]);
+			}
+		} else {
+			this.pastRounds.push([true, 0]);
+		}
+
 		let saveData = {
 			name: this.name,
 			score: this.score,
@@ -224,6 +289,10 @@ class Player {
 	}
 
 	getSetResults(score = this.score) {
+		this.premiumAvailable = true;
+		this.lostPremium = false;
+		this.currentHighScore = 0;
+		this.currentScore = 0;
 		let tempele = document.createElement("h2");
 		tempele.textContent = (score / 100).toFixed(1);
 		let tempele2 = document.createElement("h2");
@@ -247,6 +316,7 @@ class JockerGame {
 
 		this.bidingStage = true;
 		this.canBePlayed = false;
+		this.premiumHappened = false;
 		this.countSetScores = false;
 		this.gameisResuming = false;
 
@@ -336,7 +406,7 @@ class JockerGame {
 	startRound() {
 		console.log(this.queuedrounds[0]);
 		for (let i = 0; i < this.players.length; i++) {
-			this.players[i].endRound(this.queuedrounds[0]);
+			this.players[i].endRound(this.queuedrounds[0], this.queuedrounds.length);
 		}
 		this.queuedrounds.shift();
 		this.playerQueue.shift();
@@ -360,9 +430,28 @@ class JockerGame {
 
 		localStorage.setItem("JockerData-saker", JSON.stringify(saveData));
 		if (this.queuedrounds.length == 0) {
-			for (let i = 0; i < this.players.length; i++) {
-				this.players[i].setResult();
+			let howManyPremiums = 0;
+			for (let ele of this.players) {
+				if (ele.premiumAvailable == true) {
+					this.premiumHappened = true;
+					howManyPremiums++;
+				}
 			}
+
+			for (let i = 0; i < this.players.length; i++) {
+				this.players[i].setResult(this.premiumHappened, howManyPremiums);
+			}
+			saveData = {
+				gameIsOngoing: this.gameIsOngoing,
+				players: this.players.map((e) => {
+					return { name: e.name, pastRounds: e.pastRounds, score: e.score };
+				}),
+				currentRound: this.currentRound,
+				totalRounds: this.totalRounds,
+				queuedrounds: this.queuedrounds,
+				playerQueue: this.playerQueue,
+			};
+			localStorage.setItem("JockerData-saker", JSON.stringify(saveData));
 			this.countSetScores = true;
 			lockinButtonFunc();
 			return;
