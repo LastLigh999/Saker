@@ -409,6 +409,7 @@ class JockerGame {
 	}
 	startRound() {
 		console.log(this.queuedrounds[0]);
+		this.queuedrounds.length;
 		for (let i = 0; i < this.players.length; i++) {
 			this.players[i].endRound(this.queuedrounds[0], this.queuedrounds.length);
 		}
