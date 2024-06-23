@@ -14,6 +14,68 @@ let elapsedRound = 0;
 
 let lockedin = false;
 
+let testingData = {
+	gameIsOngoing: true,
+	players: [
+		{
+			name: "me",
+			pastRounds: [
+				[0, 0, 1],
+				[0, 0, 2],
+				[1, 1, 3],
+				[1, 1, 4],
+				[4, 4, 5],
+				[2, 2, 6],
+				[1, 1, 7],
+			],
+			score: 800,
+		},
+		{
+			name: "shen",
+			pastRounds: [
+				[1, 1, 1],
+				[1, 1, 2],
+				[2, 2, 3],
+				[2, 2, 4],
+				[1, 1, 5],
+				[2, 2, 6],
+				[3, 3, 7],
+			],
+			score: 950,
+		},
+		{
+			name: "is",
+			pastRounds: [
+				[0, 0, 1],
+				[0, 0, 2],
+				[0, 0, 3],
+				[0, 0, 4],
+				[0, 0, 5],
+				[0, 0, 6],
+				[0, 0, 7],
+			],
+			score: 350,
+		},
+		{
+			name: "isini",
+			pastRounds: [
+				[1, 0, 1],
+				[2, 1, 2],
+				[1, 0, 3],
+				[3, 1, 4],
+				[5, 0, 5],
+				[1, 2, 6],
+				[2, 3, 7],
+			],
+			score: -530,
+		},
+	],
+	currentRound: 8,
+	totalRounds: 8,
+	queuedrounds: [8],
+	playerQueue: [2],
+};
+
 class Player {
 	constructor(
 		name,
@@ -409,7 +471,7 @@ class JockerGame {
 	}
 	startRound() {
 		console.log(this.queuedrounds[0]);
-		this.queuedrounds.length;
+		console.log(this.queuedrounds.length);
 		for (let i = 0; i < this.players.length; i++) {
 			this.players[i].endRound(this.queuedrounds[0], this.queuedrounds.length);
 		}
