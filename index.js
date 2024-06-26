@@ -464,7 +464,15 @@ class JockerGame {
 		} else if (this.totalRounds < 25) {
 			this.nines();
 		} else {
-			alert("something went wrong");
+			let topScore = [this.players[0].score, this.players[0].name];
+			for (let i = 1; i < 4; i++) {
+				if (topScore[0] > this.players[i].score) {
+					topScore[0] = this.players[i].score;
+					topScore[1] = this.players[i].name;
+				}
+			}
+			alert(`${topScore[1]} is a winner. now clap`);
+			this.gameIsOngoing = false;
 		}
 		this.bidingStage = true;
 		globalbidingStage = this.bidingStage;
