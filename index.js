@@ -9,6 +9,7 @@ let noneAudio = new Audio("./public/audio/none.m4a");
 let wantAllAudio = new Audio("./public/audio/Yvela_minda.m4a");
 let takeAllAudio = new Audio("./public/audio/Yvelas_wageba.m4a");
 let takeNoneAudio = new Audio("./public/audio/Xishti_2.m4a");
+let sixWant = new Audio("./public/audio/6.m4a");
 let globalbidingStage = true;
 let elapsedRound = 0;
 
@@ -253,6 +254,8 @@ class Player {
 		this.hasPlacedBid = true;
 		if (number == 0) {
 			noneAudio.play();
+		} else if (number == 6) {
+			sixWant.play();
 		} else if (number == currentRound) {
 			wantAllAudio.play();
 		}
@@ -466,9 +469,11 @@ class JockerGame {
 		} else {
 			let topScore = [this.players[0].score, this.players[0].name];
 			for (let i = 1; i < 4; i++) {
-				if (topScore[0] > this.players[i].score) {
+				console.log(topScore[0]);
+				if (topScore[0] < this.players[i].score) {
 					topScore[0] = this.players[i].score;
 					topScore[1] = this.players[i].name;
+					console.log("happened");
 				}
 			}
 			alert(`${topScore[1]} is a winner. now clap`);
