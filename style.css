@@ -46,6 +46,9 @@ html {
 	overflow-y: scroll;
 }
 @media (max-width: 767px) {
+	.playerColumn {
+		border: 2px purple solid;
+	}
 	.playerColumn > div {
 		height: calc(100vh - 150px);
 	}
