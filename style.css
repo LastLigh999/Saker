@@ -10,12 +10,6 @@ html {
 	font-weight: 400;
 	font-style: normal;
 }
-@media (max-width: 767px) {
-	body,
-	html {
-		font-size: 20px;
-	}
-}
 
 #Game {
 	display: flex;
@@ -23,7 +17,15 @@ html {
 	align-items: start;
 	gap: 10px;
 }
-
+@media (max-width: 767px) {
+	body,
+	html {
+		font-size: 20px;
+	}
+	#Game {
+		gap: 2px;
+	}
+}
 /* displayBoardStyles */
 .playerColumn {
 	border: 5px purple solid;
