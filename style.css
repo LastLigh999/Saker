@@ -45,6 +45,11 @@ html {
 	height: calc(100vh - 100px);
 	overflow-y: scroll;
 }
+@media (max-width: 767px) {
+	.playerColumn > div {
+		height: calc(100vh - 200px);
+	}
+}
 
 .bid {
 	border-right: 2px purple solid;
